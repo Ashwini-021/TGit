@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cafe Discount Calculator</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#ff9a9e,#fad0c4);
+    height: 100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.container {
+    background:white;
+    padding:30px;
+    border-radius:12px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+    width:320px;
+    text-align:center;
+}
+
+h2 {
+    margin-bottom:20px;
+}
+
+input {
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:16px;
+}
+
+button {
+    background:#ff7a18;
+    color:white;
+    border:none;
+    padding:12px;
+    width:100%;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover {
+    background:#e66a00;
+}
+
+.result {
+    margin-top:15px;
+    font-weight:bold;
+    font-size:18px;
+    color:#333;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>☕ Cafe Discount</h2>
+
+    <input type="number" id="price" placeholder="Original Price">
+    <input type="number" id="discount" placeholder="Discount %">
+
+    <button onclick="calculate()">Calculate</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+function calculate(){
+    let price = document.getElementById("price").value;
+    let discount = document.getElementById("discount").value;
+
+    let discountAmount = (price * discount) / 100;
+    let finalPrice = price - discountAmount;
+
+    document.getElementById("result").innerHTML =
+        "Discount: ₹" + discountAmount.toFixed(2) + "<br>" +
+        "Final Price: ₹" + finalPrice.toFixed(2);
+}
+</script>
+
+</body>
+</html>
