@@ -1,93 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cafe Discount Calculator</title>
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cricket Scorer</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg,#ff9a9e,#fad0c4);
-    height: 100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.container {
-    background:white;
-    padding:30px;
-    border-radius:12px;
-    box-shadow:0 10px 25px rgba(0,0,0,0.2);
-    width:320px;
-    text-align:center;
-}
-
-h2 {
-    margin-bottom:20px;
-}
-
-input {
-    width:100%;
-    padding:10px;
-    margin:10px 0;
-    border-radius:8px;
-    border:1px solid #ccc;
-    font-size:16px;
-}
-
-button {
-    background:#ff7a18;
-    color:white;
-    border:none;
-    padding:12px;
-    width:100%;
-    border-radius:8px;
-    font-size:16px;
-    cursor:pointer;
-    transition:0.3s;
-}
-
-button:hover {
-    background:#e66a00;
-}
-
-.result {
-    margin-top:15px;
-    font-weight:bold;
-    font-size:18px;
-    color:#333;
-}
+body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; padding:20px; }
+.container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1);} 
+h2 { margin-top:0; }
+input, select, button { padding:8px; margin:5px 0; }
+button { cursor:pointer; }
+.score { font-size:24px; font-weight:bold; }
+.grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+.team-list { display:flex; gap:10px; flex-wrap:wrap; }
+.badge { background:#e3e7ff; padding:5px 10px; border-radius:4px; }
 </style>
 </head>
-
 <body>
-
 <div class="container">
-    <h2>☕ Cafe Discount</h2>
+<h2>🏏 Cricket Scoring App</h2>
 
-    <input type="number" id="price" placeholder="Original Price">
-    <input type="number" id="discount" placeholder="Discount %">
+<h3>Add Team</h3>
+<input id="teamName" placeholder="Team name" />
+<button onclick="addTeam()">Add Team</button>
+<div id="teams" class="team-list"></div>
 
-    <button onclick="calculate()">Calculate</button>
+<h3>Create Match</h3>
+<select id="teamA"></select>
+<select id="teamB"></select>
+<button onclick="startMatch()">Start Match</button>
 
-    <div class="result" id="result"></div>
+<div id="matchArea" style="display:none;">
+<h3>Scorecard</h3>
+<div class="score" id="score">0/0 (0.0)</div>
+
+<div class="grid">
+<button onclick="addRun(0)">0</button>
+<button onclick="addRun(1)">1</button>
+<button onclick="addRun(2)">2</button>
+<button onclick="addRun(3)">3</button>
+<button onclick="addRun(4)">4</button>
+<button onclick="addRun(6)">6</button>
+<button onclick="wicket()">W</button>
+<button onclick="wide()">Wd</button>
+<button onclick="noBall()">Nb</button>
+<button onclick="undo()">Undo</button>
+</div>
+</div>
 </div>
 
 <script>
-function calculate(){
-    let price = document.getElementById("price").value;
-    let discount = document.getElementById("discount").value;
+let teams = JSON.parse(localStorage.getItem("teams")||"[]");
+let match = null;
+let history = [];
 
-    let discountAmount = (price * discount) / 100;
-    let finalPrice = price - discountAmount;
-
-    document.getElementById("result").innerHTML =
-        "Discount: ₹" + discountAmount.toFixed(2) + "<br>" +
-        "Final Price: ₹" + finalPrice.toFixed(2);
+function saveTeams(){
+localStorage.setItem("teams", JSON.stringify(teams));
+renderTeams();
 }
-</script>
 
+function addTeam(){
+let name=document.getElementById("teamName").value;
+if(!name) return;
+teams.push({name});
+document.getElementById("teamName").value="";
+saveTeams();
+}
+
+function renderTeams(){
+let t=document.getElementById("teams");
+t.innerHTML="";
+let a=document.getElementById("teamA");
+let b=document.getElementById("teamB");
+a.innerHTML=b.innerHTML="";
+teams.forEach((team,i)=>{
+let div=document.createElement("div");
+div.className="badge";
+div.textContent=team.name;
+t.appendChild(div);
+
+a.innerHTML+=`<option value="${i}">${team.name}</option>`;
+b.innerHTML+=`<option value="${i}">${team.name}</option>`;
+});
+}
+
+function startMatch(){
+let a=document.getElementById("teamA").value;
+let b=document.getElementById("teamB").value;
+if(a===b) return alert("Choose different teams");
+match={teamA:teams[a].name, teamB:teams[b].name, runs:0, wickets:0, balls:0};
+history=[];
+document.getElementById("matchArea").style.display="block";
+updateScore();
+}
+
+function addRun(r){
+saveState();
+match.runs+=r;
+match.balls++;
+updateScore();
+}
+
+function wicket(){
+saveState();
+match.wickets++;
+match.balls++;
+updateScore();
+}
+
+function wide(){
+saveState();
+match.runs++;
+updateScore();
+}
+
+function noBall(){
+saveState();
+match.runs++;
+updateScore();
+}
+
+function undo(){
+if(history.length){
+match=history.pop();
+updateScore();
+}
+}
+
+function saveState(){
+history.push(JSON.parse(JSON.stringify(match)));
+}
+
+function updateScore(){
+let overs=Math.floor(match.balls/6)+"."+(match.balls%6);
+document.getElementById("score").textContent=
+`${match.teamA}: ${match.runs}/${match.wickets} (${overs})`;
+}
+
+renderTeams();
+</script>
 </body>
 </html>
