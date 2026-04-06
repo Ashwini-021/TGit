@@ -5,35 +5,55 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Cricket Scorer</title>
 <style>
-body { font-family: Arial, sans-serif; background:#f5f6fa; margin:0; padding:20px; }
-.container { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.1);} 
-h2 { margin-top:0; }
-input, select, button { padding:8px; margin:5px 0; }
-button { cursor:pointer; }
-.score { font-size:24px; font-weight:bold; }
-.grid { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
-.team-list { display:flex; gap:10px; flex-wrap:wrap; }
-.badge { background:#e3e7ff; padding:5px 10px; border-radius:4px; }
+body{font-family:Arial,Helvetica,sans-serif;background:#0f172a;margin:0;color:#fff}
+.header{background:#111827;padding:15px;text-align:center;font-size:20px;font-weight:bold}
+.container{padding:15px;max-width:900px;margin:auto}
+.card{background:#1f2937;border-radius:12px;padding:15px;margin-bottom:15px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+input,select,button{padding:10px;border-radius:8px;border:none;margin:5px 0}
+button{background:#2563eb;color:#fff;font-weight:bold}
+button.secondary{background:#374151}
+.scoreBox{display:flex;justify-content:space-between;align-items:center}
+.scoreMain{font-size:28px;font-weight:bold}
+.sub{font-size:14px;color:#cbd5e1}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}
+.grid button{background:#111827}
+.teamBadge{background:#334155;padding:6px 10px;border-radius:6px;margin-right:6px;display:inline-block}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px;border-bottom:1px solid #374151;text-align:center}
+th{color:#94a3b8}
 </style>
 </head>
 <body>
+<div class="header">🏏 Cricket Scorer</div>
 <div class="container">
-<h2>🏏 Cricket Scoring App</h2>
 
+<div class="card">
 <h3>Add Team</h3>
 <input id="teamName" placeholder="Team name" />
 <button onclick="addTeam()">Add Team</button>
-<div id="teams" class="team-list"></div>
+<div id="teams"></div>
+</div>
 
+<div class="card">
 <h3>Create Match</h3>
 <select id="teamA"></select>
 <select id="teamB"></select>
+<input type="number" id="overs" value="5" min="1" max="50" />
 <button onclick="startMatch()">Start Match</button>
+</div>
 
-<div id="matchArea" style="display:none;">
-<h3>Scorecard</h3>
-<div class="score" id="score">0/0 (0.0)</div>
+<div id="matchArea" style="display:none">
+<div class="card">
+<div class="scoreBox">
+<div>
+<div id="score" class="scoreMain">0/0</div>
+<div id="overTxt" class="sub">0.0 overs</div>
+</div>
+<div class="sub" id="teamsName"></div>
+</div>
+</div>
 
+<div class="card">
 <div class="grid">
 <button onclick="addRun(0)">0</button>
 <button onclick="addRun(1)">1</button>
@@ -47,95 +67,67 @@ button { cursor:pointer; }
 <button onclick="undo()">Undo</button>
 </div>
 </div>
+
+<div class="card">
+<h3>Over Wise</h3>
+<table>
+<thead>
+<tr><th>Over</th><th>Runs</th><th>Wkts</th></tr>
+</thead>
+<tbody id="overTable"></tbody>
+</table>
+</div>
+</div>
 </div>
 
 <script>
-let teams = JSON.parse(localStorage.getItem("teams")||"[]");
-let match = null;
-let history = [];
+let teams=JSON.parse(localStorage.getItem("teams")||"[]");
+let match=null;let history=[];
 
-function saveTeams(){
-localStorage.setItem("teams", JSON.stringify(teams));
-renderTeams();
-}
-
-function addTeam(){
-let name=document.getElementById("teamName").value;
-if(!name) return;
-teams.push({name});
-document.getElementById("teamName").value="";
-saveTeams();
-}
+function addTeam(){let name=teamName.value;if(!name)return;teams.push({name});teamName.value="";save();}
+function save(){localStorage.setItem("teams",JSON.stringify(teams));renderTeams();}
 
 function renderTeams(){
-let t=document.getElementById("teams");
-t.innerHTML="";
-let a=document.getElementById("teamA");
-let b=document.getElementById("teamB");
-a.innerHTML=b.innerHTML="";
-teams.forEach((team,i)=>{
-let div=document.createElement("div");
-div.className="badge";
-div.textContent=team.name;
-t.appendChild(div);
-
-a.innerHTML+=`<option value="${i}">${team.name}</option>`;
-b.innerHTML+=`<option value="${i}">${team.name}</option>`;
-});
-}
+teamsDiv.innerHTML="";
+teamA.innerHTML=teamB.innerHTML="";
+teams.forEach((t,i)=>{
+teamsDiv.innerHTML+=`<span class='teamBadge'>${t.name}</span>`;
+teamA.innerHTML+=`<option value='${i}'>${t.name}</option>`;
+teamB.innerHTML+=`<option value='${i}'>${t.name}</option>`;
+});}
 
 function startMatch(){
-let a=document.getElementById("teamA").value;
-let b=document.getElementById("teamB").value;
-if(a===b) return alert("Choose different teams");
-match={teamA:teams[a].name, teamB:teams[b].name, runs:0, wickets:0, balls:0};
+let a=teamA.value,b=teamB.value,ov=overs.value;
+if(a===b)return alert("Select different teams");
+match={teamA:teams[a].name,teamB:teams[b].name,runs:0,wickets:0,balls:0,overs:ov,overData:[]};
 history=[];
-document.getElementById("matchArea").style.display="block";
-updateScore();
-}
+matchArea.style.display="block";
+teamsName.textContent=match.teamA+" vs "+match.teamB;
+update();}
 
-function addRun(r){
-saveState();
-match.runs+=r;
-match.balls++;
-updateScore();
-}
+function addRun(r){saveState();match.runs+=r;recordBall(r,false);update();}
+function wicket(){saveState();match.wickets++;recordBall(0,true);update();}
+function wide(){saveState();match.runs++;update();}
+function noBall(){saveState();match.runs++;update();}
 
-function wicket(){
-saveState();
-match.wickets++;
-match.balls++;
-updateScore();
-}
+function recordBall(r,w){let o=Math.floor(match.balls/6);
+if(!match.overData[o])match.overData[o]={runs:0,wkts:0};
+match.overData[o].runs+=r;if(w)match.overData[o].wkts++;
+match.balls++;renderTable();}
 
-function wide(){
-saveState();
-match.runs++;
-updateScore();
-}
+function renderTable(){overTable.innerHTML="";
+match.overData.forEach((o,i)=>{
+overTable.innerHTML+=`<tr><td>${i+1}</td><td>${o.runs}</td><td>${o.wkts}</td></tr>`;
+});}
 
-function noBall(){
-saveState();
-match.runs++;
-updateScore();
-}
+function saveState(){history.push(JSON.parse(JSON.stringify(match)));}
+function undo(){if(history.length){match=history.pop();update();renderTable();}}
 
-function undo(){
-if(history.length){
-match=history.pop();
-updateScore();
-}
-}
-
-function saveState(){
-history.push(JSON.parse(JSON.stringify(match)));
-}
-
-function updateScore(){
-let overs=Math.floor(match.balls/6)+"."+(match.balls%6);
-document.getElementById("score").textContent=
-`${match.teamA}: ${match.runs}/${match.wickets} (${overs})`;
-}
+function update(){
+let ov=Math.floor(match.balls/6)+"."+(match.balls%6);
+score.textContent=`${match.runs}/${match.wickets}`;
+overTxt.textContent=ov+" overs";
+if(match.balls>=match.overs*6)alert("Innings Complete");}
 
 renderTeams();
 </script>
